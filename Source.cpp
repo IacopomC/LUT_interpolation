@@ -30,7 +30,6 @@ int main(int argc, char** argv)
            for (int b = 0; b < digit; b++)
             {
                 lut[r].at<cv::Vec3b>(b, g) = dst_lut(r, g * digit + b);
-                //std::cout << "lut " << lut[r].at<cv::Vec3b>(b, g) << std::endl;
             }
 
     colorManagement(src, dst, lut);
