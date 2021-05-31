@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 
 
     cv::imshow("Original Image", src);
-    cv::imshow("Processed Image", dst_lut);
+    cv::imshow("Processed Image", dst);
 
     cv::waitKey();
     return 0;
