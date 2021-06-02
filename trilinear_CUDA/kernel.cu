@@ -8,37 +8,37 @@
 #include <opencv2/core/cuda/vec_math.hpp>
 
 
-__device__ float interpolation3D(float currentValue[])
+__device__ int3 interpolation3D(float3 currentValue)
 {
-    cv::Vec3f low = cv::Vec3b(floor(currentValue[0]), floor(currentValue[1]), floor(currentValue[2]));
-    cv::Vec3f high = cv::Vec3b(ceil(currentValue[0]), ceil(currentValue[1]), ceil(currentValue[2]));
+    float3 low = { floor(currentValue.x), floor(currentValue.y), floor(currentValue.z) };
+    float3 high = { ceil(currentValue.x), ceil(currentValue.y), ceil(currentValue.z) };
+         
+    float3 c000 = { low.x, low.y, high.z };
+    float3 c001 = { low.x, high.y, high.z };
+    float3 c011 = { low.x, high.y, low.z };
+    float3 c010 = { low.x, low.y, low.z };
+    float3 c100 = { high.x, low.y, high.z };
+    float3 c101 = { high.x, high.y, high.z };
+    float3 c111 = { high.x, high.y, low.z };
+    float3 c110 = { high.x, low.y, low.z };
 
-    cv::Vec3f c000 = cv::Vec3f(low[0], low[1], high[2]);
-    cv::Vec3f c001 = cv::Vec3f(low[0], high[1], high[2]);
-    cv::Vec3f c011 = cv::Vec3f(low[0], high[1], low[2]);
-    cv::Vec3f c010 = cv::Vec3f(low[0], low[1], low[2]);
-    cv::Vec3f c100 = cv::Vec3f(high[0], low[1], high[2]);
-    cv::Vec3f c101 = cv::Vec3f(high[0], high[1], high[2]);
-    cv::Vec3f c111 = cv::Vec3f(high[0], high[1], low[2]);
-    cv::Vec3f c110 = cv::Vec3f(high[0], low[1], low[2]);
-
-    float x_d = (currentValue[0] - low[0]) / (high[0] - low[0]);
-    float y_d = (currentValue[1] - low[1]) / (high[1] - low[1]);
-    float z_d = (currentValue[2] - low[2]) / (high[2] - low[2]);
+    float x_d = (currentValue.x - low.x) / (high.x - low.x);
+    float y_d = (currentValue.y - low.y) / (high.y - low.y);
+    float z_d = (currentValue.z - low.z) / (high.z - low.z);
 
     x_d = x_d > 0 ? x_d : 0;
     y_d = y_d > 0 ? y_d : 0;
     z_d = z_d > 0 ? z_d : 0;
 
-    cv::Vec3f c00 = c000 * (1 - x_d) + c100 * x_d;
-    cv::Vec3f c01 = c001 * (1 - x_d) + c101 * x_d;
-    cv::Vec3f c11 = c010 * (1 - x_d) + c110 * x_d;
-    cv::Vec3f c10 = c011 * (1 - x_d) + c111 * x_d;
+    float3 c00 = {c000.x * (1 - x_d) + c100.x * x_d, c000.y * (1 - x_d) + c100.y * x_d , c000.z * (1 - x_d) + c100.z * x_d };
+    float3 c01 = {c001.x * (1 - x_d) + c101.x * x_d, c001.y * (1 - x_d) + c101.y * x_d , c001.z * (1 - x_d) + c101.z * x_d };
+    float3 c11 = {c010.x * (1 - x_d) + c110.x * x_d, c010.y * (1 - x_d) + c110.y * x_d , c010.z * (1 - x_d) + c110.z * x_d };
+    float3 c10 = {c011.x * (1 - x_d) + c111.x * x_d, c010.y * (1 - x_d) + c110.y * x_d , c010.z * (1 - x_d) + c110.z * x_d };
+    
+    float3 c0 = { c00.x * (1 - y_d) + c10.x * y_d, c00.y * (1 - y_d) + c10.y * y_d, c00.z * (1 - y_d) + c10.z * y_d };
+    float3 c1 = { c01.x * (1 - y_d) + c11.x * y_d, c01.y * (1 - y_d) + c11.y * y_d, c01.z * (1 - y_d) + c11.z * y_d };
 
-    cv::Vec3f c0 = c00 * (1 - y_d) + c10 * y_d;
-    cv::Vec3f c1 = c01 * (1 - y_d) + c11 * y_d;
-
-    return c0 * (1 - z_d) + c1 * z_d;
+    return { (int)(c0.x * (1 - z_d) + c1.x * z_d), (int)(c0.y * (1 - z_d) + c1.y * z_d), (int)(c0.z * (1 - z_d) + c1.z * z_d) };
 }
 
 
@@ -48,23 +48,21 @@ __global__ void  colorManagement(const cv::cuda::PtrStep<uchar3> src, cv::cuda::
     const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
     const int dst_y = blockDim.y * blockIdx.y + threadIdx.y;
 
-    cv::Vec3b finalValue;
+    int3 finalValue;
 
     if (dst_x < cols && dst_y < rows)
     {
-        float currentValue[3] = {(float)src(dst_y, dst_x).x, (float)src(dst_y, dst_x).y, (float)src(dst_y, dst_x).z };
+        float3 currentValue = {(float)src(dst_y, dst_x).x, (float)src(dst_y, dst_x).y, (float)src(dst_y, dst_x).z };
 
-        currentValue[0] = currentValue[0] > 63 ? 63 : currentValue[0];
-        currentValue[1] = currentValue[1] > 63 ? 63 : currentValue[1];
-        currentValue[2] = currentValue[2] > 63 ? 63 : currentValue[2];
+        currentValue.x = currentValue.x > 63 ? 63 : currentValue.x;
+        currentValue.y = currentValue.y > 63 ? 63 : currentValue.y;
+        currentValue.z = currentValue.z > 63 ? 63 : currentValue.z;
 
-        const float finalValue[3] = interpolation3D(currentValue);
-
-        int x = lut[finalValue[2]][finalValue[0], finalValue[1]].x;
+        finalValue = interpolation3D(currentValue);
         
-        dst(dst_y, dst_x).x = (unsigned char)(x);
-        dst(dst_y, dst_x).y = (unsigned char)(lut[finalValue[2]][finalValue[0], finalValue[1]][1]);
-        dst(dst_y, dst_x).z = (unsigned char)(lut[finalValue[2]][finalValue[0], finalValue[1]][2]);
+        dst(dst_y, dst_x).x = (unsigned char)(lut[finalValue.z][finalValue.x, finalValue.y].x);
+        dst(dst_y, dst_x).y = (unsigned char)(lut[finalValue.z][finalValue.x, finalValue.y].y);
+        dst(dst_y, dst_x).z = (unsigned char)(lut[finalValue.z][finalValue.x, finalValue.y].z);
 
     }
 
