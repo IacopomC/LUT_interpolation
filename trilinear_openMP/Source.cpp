@@ -9,12 +9,16 @@ void colorManagement(cv::Mat_<cv::Vec3b>& src, cv::Mat_<cv::Vec3b>& dst, cv::Mat
 
 int main(int argc, char** argv)
 {
-    cv::namedWindow("Original Image", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
-    cv::namedWindow("Processed Image", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
+    cv::VideoCapture cap("C:\\Users\\cl11273v\\Desktop\\video.mp4");
 
-    cv::Mat_<cv::Vec3b> src = cv::imread(argv[1]);
-    cv::Mat_<cv::Vec3b> dst;
-    cv::Mat_<cv::Vec3b> dst_lut = cv::imread(argv[2]);
+    // Check if video opened successfully
+    if (!cap.isOpened()) {
+        std::cout << "Error opening video stream or file" << endl;
+        return -1;
+    }
+
+    // Create lut
+    cv::Mat_<cv::Vec3b> dst_lut = cv::imread(argv[1]);
 
     const int digit = 64;
 
@@ -27,19 +31,43 @@ int main(int argc, char** argv)
     float step = 1.0 / (digit - 1.0);
     for (int r = 0; r < digit; r++)
         for (int g = 0; g < digit; g++)
-           for (int b = 0; b < digit; b++)
+            for (int b = 0; b < digit; b++)
             {
                 lut[r].at<cv::Vec3b>(b, g) = dst_lut(r, g * digit + b);
             }
 
-    colorManagement(src, dst, lut);
-    
-    //std::cout << "lut " << lut << std::endl;
+    while (1) {
 
+        cv::Mat frame;
+        // Capture frame-by-frame
+        cap >> frame;
 
-    cv::imshow("Original Image", src);
-    cv::imshow("Processed Image", dst);
+        // If the frame is empty, break immediately
+        if (frame.empty())
+            break;
 
-    cv::waitKey();
+        cv::Mat_<cv::Vec3b> src = frame;
+        cv::Mat_<cv::Vec3b> dst;
+
+        colorManagement(src, dst, lut);
+
+        // Display the original frame
+        cv::imshow("Original video", frame);
+
+        // Display the processed frame
+        cv::imshow("Processed video", dst);
+
+        // Press  ESC on keyboard to exit
+        char c = (char)cv::waitKey(25);
+        if (c == 27)
+            break;
+    }
+
+    // When everything done, release the video capture object
+    cap.release();
+
+    // Closes all the frames
+    cv::destroyAllWindows();
+
     return 0;
 }

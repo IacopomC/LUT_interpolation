@@ -1,8 +1,11 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
 
-cv::Vec3b interpolation1D(cv::Vec3f currentValue, cv::Vec3f low, cv::Vec3f high)
+cv::Vec3b interpolation3D(cv::Vec3f currentValue)
 {
+    cv::Vec3f low = cv::Vec3b(floor(currentValue[0]), floor(currentValue[1]), floor(currentValue[2]));
+    cv::Vec3f high = cv::Vec3b(ceil(currentValue[0]), ceil(currentValue[1]), ceil(currentValue[2]));
+
     cv::Vec3f c000 = cv::Vec3f(low[0], low[1], high[2]);
     cv::Vec3f c001 = cv::Vec3f(low[0], high[1], high[2]);
     cv::Vec3f c011 = cv::Vec3f(low[0], high[1], low[2]);
@@ -39,8 +42,6 @@ void colorManagement(cv::Mat_<cv::Vec3b>& src, cv::Mat_<cv::Vec3b>& dst, cv::Mat
     dst = cv::Vec3b(0, 0, 0);
 
     cv::Vec3f currentValue;
-    cv::Vec3f low;
-    cv::Vec3f high;
 
     cv::Vec3b finalValue;
 
@@ -56,10 +57,7 @@ void colorManagement(cv::Mat_<cv::Vec3b>& src, cv::Mat_<cv::Vec3b>& dst, cv::Mat
             currentValue[1] = currentValue[1] > 63 ? 63 : currentValue[1];
             currentValue[2] = currentValue[2] > 63 ? 63 : currentValue[2];
 
-            low = cv::Vec3b(floor(currentValue[0]), floor(currentValue[1]), floor(currentValue[2]));
-            high = cv::Vec3b(ceil(currentValue[0]), ceil(currentValue[1]), ceil(currentValue[2]));
-
-            finalValue = interpolation1D(currentValue, low, high);
+            finalValue = interpolation3D(currentValue);
 
             dst.at<cv::Vec3b>(i, j) = lut[finalValue[2]].at<cv::Vec3b>(finalValue[0], finalValue[1]);
         }
