@@ -10,8 +10,8 @@
 
 __device__ int3 interpolation3D(float3 currentValue)
 {
-    float3 low = { floor(currentValue.x), floor(currentValue.y), floor(currentValue.z) };
-    float3 high = { ceil(currentValue.x), ceil(currentValue.y), ceil(currentValue.z) };
+    float3 low = { floor((double)currentValue.x), floor((double)currentValue.y), floor((double)currentValue.z) };
+    float3 high = { ceil((double)currentValue.x), ceil((double)currentValue.y), ceil((double)currentValue.z) };
          
     float3 c000 = { low.x, low.y, high.z };
     float3 c001 = { low.x, high.y, high.z };
@@ -42,7 +42,7 @@ __device__ int3 interpolation3D(float3 currentValue)
 }
 
 
-__global__ void  colorManagement(const cv::cuda::PtrStep<uchar3> src, cv::cuda::PtrStep<uchar3> dst, cv::cuda::PtrStep<uchar3> lut[], int rows, int cols)
+__global__ void  colorManagement(const cv::cuda::PtrStep<uchar3> src, cv::cuda::PtrStep<uchar3> dst, cv::cuda::PtrStep<uchar3> lut, int rows, int cols)
 {
 
     const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
@@ -52,7 +52,7 @@ __global__ void  colorManagement(const cv::cuda::PtrStep<uchar3> src, cv::cuda::
 
     if (dst_x < cols && dst_y < rows)
     {
-        float3 currentValue = {(float)src(dst_y, dst_x).x, (float)src(dst_y, dst_x).y, (float)src(dst_y, dst_x).z };
+        float3 currentValue = {(float)src(dst_y, dst_x).x / 4.0, (float)src(dst_y, dst_x).y / 4.0, (float)src(dst_y, dst_x).z / 4.0 };
 
         currentValue.x = currentValue.x > 63 ? 63 : currentValue.x;
         currentValue.y = currentValue.y > 63 ? 63 : currentValue.y;
@@ -60,9 +60,7 @@ __global__ void  colorManagement(const cv::cuda::PtrStep<uchar3> src, cv::cuda::
 
         finalValue = interpolation3D(currentValue);
         
-        dst(dst_y, dst_x).x = (unsigned char)(lut[finalValue.z][finalValue.x, finalValue.y].x);
-        dst(dst_y, dst_x).y = (unsigned char)(lut[finalValue.z][finalValue.x, finalValue.y].y);
-        dst(dst_y, dst_x).z = (unsigned char)(lut[finalValue.z][finalValue.x, finalValue.y].z);
+        dst(dst_y, dst_x) = lut(finalValue.z, finalValue.y * 64 + finalValue.x);
 
     }
 

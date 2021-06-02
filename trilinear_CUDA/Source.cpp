@@ -9,7 +9,7 @@ void colorManagementCUDA(cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, cv::cuda:
 
 int main(int argc, char** argv)
 {
-    cv::VideoCapture cap("C:\\Users\\cl11273v\\Desktop\\video.mp4");
+    cv::VideoCapture cap("C:\\Users\\ixrplatform\\Documents\\Iacopo\\Complex_Rendering\\video.mp4");
 
     // Check if video opened successfully
     if (!cap.isOpened()) {
@@ -42,6 +42,7 @@ int main(int argc, char** argv)
     while (1) {
 
         cv::Mat_<cv::Vec3b> frame;
+        cv::Mat_<cv::Vec3b> h_result;
         // Capture frame-by-frame
         cap >> frame;
 
@@ -57,11 +58,13 @@ int main(int argc, char** argv)
 
         colorManagementCUDA(d_img, d_result, d_lut, 32, 32);
 
+        d_result.download(h_result);
+
         // Display the original frame
         cv::imshow("Original video", frame);
 
         // Display the processed frame
-        cv::imshow("Processed video", d_result);
+        cv::imshow("Processed video", h_result);
 
         // Press  ESC on keyboard to exit
         char c = (char)cv::waitKey(25);
