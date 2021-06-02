@@ -25,18 +25,6 @@ int main(int argc, char** argv)
 
     cv::Mat_<cv::Vec3b> lut[256];
 
-    for (int i = 0; i < 256; i++) {
-        lut[i] = cv::Mat::zeros(cv::Size(256, 256), CV_8UC3);
-    }
-
-    float step = 1.0 / (digit - 1.0);
-    for (int r = 0; r < digit; r++)
-        for (int g = 0; g < digit; g++)
-            for (int b = 0; b < digit; b++)
-            {
-                lut[r].at<cv::Vec3b>(b, g) = h_lut(r, g * digit + b);
-            }
-
     d_lut.upload(h_lut);
 
     while (1) {
