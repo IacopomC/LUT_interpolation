@@ -18,9 +18,9 @@ cv::Vec3b nearest_neighbor(cv::Vec3f currentValue)
 
 
     c[0] = x_d < 0.5 ? low[0] : high[0];
-    c[1] = x_d < 0.5 ? low[1] : high[1];
+    c[1] = y_d < 0.5 ? low[1] : high[1];
 
-    c[2] = x_d < 0.5 ? low[2] : high[2];
+    c[2] = z_d < 0.5 ? low[2] : high[2];
 
     return c;
 }

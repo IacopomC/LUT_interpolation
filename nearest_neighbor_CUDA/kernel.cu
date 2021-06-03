@@ -24,9 +24,9 @@ __device__ int3 nn_interpolation(float3 currentValue)
     float3 c;
 
     c.x = x_d < 0.5 ? low.x : high.x;
-    c.y = x_d < 0.5 ? low.y : high.y;
+    c.y = y_d < 0.5 ? low.y : high.y;
 
-    c.z = x_d < 0.5 ? low.z : high.z;
+    c.z = z_d < 0.5 ? low.z : high.z;
 
     return { (int)(c.x), (int)(c.y), (int)(c.z) };
 }
